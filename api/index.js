@@ -1,7 +1,8 @@
 import express from "express" 
 import path from 'path'  
 import {authenticateUser,registerUser, getUserIdByName} from "../Auth/authenticateUser.js"
-import {StockManagement} from "./StockManagement.js" 
+import {StockManagement} from "./StockManagement.js"  
+import pool from './connection.js'; 
 import cors from "cors"
 const app= express() 
 const PORT= 3000 
@@ -11,7 +12,12 @@ var userConnections= {}
 
 //Manage the latest products added 
 var latestProducts={}  
-
+pool.getConnection(function(err,connection){
+  if(err){
+    console.log("Server cannot be started"); 
+    process.exit(1); 
+  }
+})
 //App configurations
 app.use(cors());
 app.use(express.static(path.join(path.resolve(),'public')))
@@ -112,7 +118,8 @@ app.post("/login",(req,res) => {
 
 app.get("/workspace",(req,res)=>{
   res.sendFile(path.join(path.resolve(),'public','productForm.html')); 
-})
+}) 
+
 app.post("/addProduct",(req,res) => { 
    console.log(req.body) 
    console.log("add product called");   
@@ -131,21 +138,7 @@ app.post("/addProduct",(req,res) => {
         quantity: req.body.quantity,
         ownership_date: req.body.ownership_date,
     },
-        req.body.product_type === 'TV'
-        ? {
-              screen_size: req.body.screen_size,
-              resolution: req.body.resolution,
-              smart_tv: req.body.smart_tv === 'YES', // Ensure boolean conversion
-              brand: req.body.brand,
-          }
-        : req.body.product_type === 'Refrigerator'
-        ? {
-              capacity: req.body.capacity,
-              energy_rating: req.body.energy_rating,
-              door_type: req.body.door_type,
-              brand: req.body.brand, 
-          }
-        : {}
+       req.body.product_description
 )
     .then((result) => {
         if (result === 'ok') {
@@ -155,12 +148,7 @@ app.post("/addProduct",(req,res) => {
                 req.body.product_id
             )
                 .then((latestProduct) => {
-                    const user_id = req.body.user_id;
-                    console.log(userConnections[0]);
-                    userConnections[user_id].forEach((conn) => {
-                      conn.write(`event: message\n`)
-                      conn.write(`data: ${JSON.stringify({ product:latestProduct})}\n\n`)
-                    });
+                   res.send(JSON.stringify(latestProduct));  
                 })
                 .catch((err) => console.log(err));
         }
@@ -168,6 +156,26 @@ app.post("/addProduct",(req,res) => {
     .catch((err) => {
         res.send({ status: 'failure' });
     });
+}) 
+
+app.delete("/deleteProduct/:product_id",(req,res)=>{
+    StockManagement.removeProduct(req.params.product_id)
+    .then((result)=>{ 
+      res.send({status:"success"})
+    })
+    .catch((err)=>{ 
+      console.log(err);
+      res.send({status:"DELETED"}); 
+    })
+}) 
+app.patch("/updateProduct/:product_id/:product_type/:product_prop/:new_value",(req,res)=>{
+  StockManagement.updateProductDetails(req.params.product_id,req.params.product_type,req.params.product_prop,req.params.new_value)
+  .then((done)=>{
+    res.send({status:"success"})
+  }) 
+  .catch((err)=>{
+    res.send({status:err}) 
+  })
 })
 app.get("/getProduct",(req,res)=>{
   
@@ -187,11 +195,6 @@ app.get("/getProduct",(req,res)=>{
     
 }) 
 
-app.post("/removeProduct",(req,res) => {
-   StockManagement.removeProduct(req.body.user_id,req.body.product_type,req.body.product_id)
-   .then((result)=>{res.send(result)}) 
-   .catch((err)=>{res.send("ERROR")})
-})  
 app.post("/discontinueProduct",(req,res)=>{
    StockManagement.discontinueProduct(req.body.user_id,req.body.product_id)
    .then((result)=>{res.send(result)}) 
