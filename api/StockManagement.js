@@ -1,17 +1,16 @@
-import db from './connection.js'
+import db from './connection.js' 
+
+
 class StockManagement{ 
   
   static getAllProductsbyType(user_id,product_type){ 
     return new Promise((resolve,reject) => {
-      const validProductTypes = ['TV', 'Refrigerator'];  // Add all valid types here
-      if (!validProductTypes.includes(product_type)) {
-        return reject('Invalid product type');
-      }
+      // Add all valid types here
+
       const query=
       `
       SELECT 
           p.*, 
-          t.*,
           o.ownership_date, 
           o.quantity, 
           o.quantity * p.product_price AS total_value
@@ -19,12 +18,10 @@ class StockManagement{
           ownership o
       JOIN 
           product p ON p.product_id = o.product_id
-      JOIN 
-          ${product_type} t ON t.product_id = p.product_id
       WHERE 
-          o.user_id = ?;
+          o.user_id = ? AND p.product_type = ?
       ` 
-      db.query(query,[user_id],(err,result)=>{ 
+      db.query(query,[user_id,product_type],(err,result)=>{ 
         if(err){
           return reject(err);
 
@@ -36,25 +33,24 @@ class StockManagement{
   static getProductById(user_id, product_type, product_id) {
     return new Promise((resolve, reject) => {
       // Validate product_type to prevent SQL injection
-      const validProductTypes = ['TV', 'Refrigerator'];  // Add all valid types here
-      if (!validProductTypes.includes(product_type)) {
-        return reject('Invalid product type');
-      }
-  
       // Dynamically construct the table name based on validated product_type
       const query = `
-        SELECT t.*, p.*
-        FROM ${product_type} t
-        JOIN product p ON t.product_id = p.product_id
-        JOIN ownership up ON p.product_id = up.product_id
-        WHERE p.product_type = ?
-        AND up.user_id = ?
-        AND p.product_id = ?
-      `;``
+        SELECT 
+          p.*, 
+          o.ownership_date, 
+          o.quantity, 
+          o.quantity * p.product_price AS total_value
+      FROM 
+          ownership o
+      JOIN 
+          product p ON p.product_id = o.product_id
+      WHERE 
+          o.user_id = ? AND p.product_type = ? AND p.product_id = ?
+      `;
   
-      console.log('Running query with:', { product_type, user_id, product_id });  // Debugging log
+     
   
-      db.query(query, [product_type, user_id, product_id], (err, results) => {
+      db.query(query, [user_id,product_type,product_id], (err, results) => {
         if (err) {
           console.log('Error:', err.stack);  // More detailed error logging
           reject(err);  // Reject the promise in case of error
@@ -101,60 +97,45 @@ class StockManagement{
 
         }
       )
+    } 
+    static totalProducts(user_id){
+      const query= 
+      ` 
+      SELECT COUNT(*) AS TOTAL_ITEMS FROM  ownership 
+      WHERE ownership.user_id = ? 
+      ` 
+      return new Promise((resolve,reject)=>{
+        db.query(query,[user_id],(err,result)=>{
+          if(err){
+            reject(err)
+          } 
+          resolve(result[0].TOTAL_ITEMS);
+        })
+      })
     }
-    static totalProducts(user_id,product_type){  
+    static totalProductsbyType(user_id,product_type){  
       return new Promise((resolve,reject)=>{
 
 
-         const validProductTypes = ['TV', 'Refrigerator'];  // Add all valid types here
-          if (!validProductTypes.includes(product_type)) {
-            return reject('Invalid product type');
-          }
-         const query = `SELECT COUNT(*) as TOTAL_ITEMS FROM ${product_type}` 
-         db.query(query,(err,result)=>{ 
+        // Add all valid types here
+         const query = `SELECT COUNT(*) as TOTAL_ITEMS FROM OWNERSHIP,PRODUCT
+                        WHERE OWNERSHIP.PRODUCT_ID = PRODUCT.PRODUCT_ID AND 
+                        PRODUCT.PRODUCT_TYPE= ? AND OWNERSHIP.USER_ID = ? 
+         ` 
+         db.query(query,[product_type,user_id],(err,result)=>{ 
           if(err){
             console.log(err.stack); 
             return reject(err); 
           }
           else{ 
+            
             resolve(result[0].TOTAL_ITEMS); 
           } 
          })
       })
     }
-    static #addRefrigerator(product_id,fridge){
-     return new Promise( 
-     (resolve,reject)=>{
-        db.query('INSERT INTO REFRIGERATOR (product_id,capacity,energy_rating,door_type,brand) VALUES (?,?,?,?,?)',
-              [product_id,fridge.capacity,fridge.energy_rating,fridge.door_type,fridge.brand],
-              (err,results)=>{ 
-                if(err){ 
-                  reject(err); 
-                }
-                else{
-                  console.log(results); 
-                  resolve(results); 
-                }
-              }
-        ) 
-    })
-    }
-    static #addTv(product_id,tv){ 
-     return new Promise((resolve,reject)=>{
-      db.query('INSERT INTO TV (product_id,screen_size,resolution,smart_tv,brand) VALUES (?,?,?,?,?)',
-              [product_id,tv.screen_size,tv.resolution,tv.smart_tv,tv.brand], 
-              (err,result)=>{
-                   if(err){ 
-                    console.log(err.stack); 
-                    reject(err); 
-                   }
-                   else{
-                    resolve(result); 
-                   }
-              }
-      ) 
-     })
-    }
+   
+    
     static #addOwnership(user_id,product_id,ownership_date,quantity){ 
      return new Promise((resolve,reject)=>{ 
       db.query('INSERT INTO OWNERSHIP (user_id,product_id,ownership_date,quantity) VALUES (?,?,?,?)',
@@ -174,8 +155,8 @@ class StockManagement{
     }
     static addProduct(user_id,product_type,product_info,product_details){ 
      return new Promise((resolve,reject) =>{
-      db.query('INSERT INTO Product (product_id,product_price,product_name,product_discontinued,product_type) VALUES (?,?,?,?,?)',
-               [product_info.product_id,product_info.price,product_info.name,product_info.discontinued,product_type],function(err,result){
+      db.query('INSERT INTO Product (product_id,product_price,product_name,product_discontinued,product_type,product_description,product_brand) VALUES (?,?,?,?,?,?,?)',
+               [product_info.product_id,product_info.price,product_info.name,product_info.discontinued,product_type,JSON.stringify(product_details),product_info.product_brand],function(err,result){
                     if(err ){
                       console.log(err.stack); 
                       reject(err); 
@@ -187,72 +168,105 @@ class StockManagement{
               )   
           }
      )
-     .then(()=>{ 
-        if(product_type=="Refrigerator"){ 
-             this.#addRefrigerator(product_info.product_id,product_details); 
-        } 
-        else if(product_type=="TV"){
-            this.#addTv(product_info.product_id,product_details); 
-        }
-      } 
-     )
      .then(()=>{
          this.#addOwnership(user_id,product_info.product_id,product_info.ownership_date,product_info.quantity) 
          return "OK"; 
      })
     }
-    static updateProductDetails(product_id,product_type,product_property,new_value){ 
-      const product_prop_dictionary =
-      { 
-          'Product': ['product_id','product_name','product_price','product_quantity','ownership_date'],
-          'TV':['screen_size','resolution','smart_tv'],  
-          'Refrigerator': ['capacity','energy_rating','door_type']
-      } 
-      
-        return new Promise((resolve,reject)=>{ 
-          if(product_prop_dictionary['Product'].includes(product_property) || product_prop_dictionary[product_type].includes(product_property)){
-            const query = ` 
+    static updateProductDetails(user_id,product_id,product_property,new_value){ 
+        
+      const prop_list = [
+        "product_id",
+        "product_name",
+        "product_price",
+        "product_type",
+        "product_discontinued",
+        "product_brand",
+        "ownership_date",
+        "quantity",
+      ];
+    
+      return new Promise((resolve, reject) => {
+        if (prop_list.includes(product_property)) {
+          // For standard properties
+          const query = `
             UPDATE PRODUCT
-            SET ${product_property} = ?
-            WHERE product_id = ?
-          ` 
-            db.query(query,[new_value,product_id],(result,err)=>{
-              if(err){
-                reject(err); 
+            INNER JOIN OWNERSHIP ON PRODUCT.PRODUCT_ID = OWNERSHIP.PRODUCT_ID
+            SET ${db.escapeId(product_property)} = ?
+            WHERE PRODUCT.PRODUCT_ID = ? AND OWNERSHIP.USER_ID = ?;
+          `;
+          db.query(query, [new_value, product_id, user_id], (err, result) => {
+            if (err) {
+              console.error(err);
+              return reject(err);
+            }
+            if (result.affectedRows > 0) {
+              resolve("Update successful");
+            } else {
+              reject("No matching product or user found");
+            }
+          });
+        } else {
+          // For JSON properties
+          const query = `
+            UPDATE PRODUCT
+            INNER JOIN OWNERSHIP ON PRODUCT.PRODUCT_ID = OWNERSHIP.PRODUCT_ID
+            SET product_description = JSON_SET(product_description, ?, ?)
+            WHERE PRODUCT.PRODUCT_ID = ? AND OWNERSHIP.USER_ID = ?;
+          `;
+          const jsonPath = `$.${product_property}`;
+          db.query(
+            query,
+            [jsonPath, new_value, product_id, user_id],
+            (err, result) => {
+              if (err) {
+                console.log(err);
+                return reject(err);
               }
-              else{
-                 resolve(result.affectedRows==1); 
+              if (result.affectedRows > 0) {
+                resolve("JSON update successful");
+              } else {
+                reject("No matching product or user found");
               }
-            })
-          }
-          else{
-            reject('Non-existent property');
-          }
-          
-        })
+            }
+          );
+        }
+      });
       }
        
     
-    static removeProduct(user_id,product_type,id){ 
-     return new Promise((resolve,reject) => {
-      const query=`DELETE FROM PRODUCT WHERE product_id = ?` 
-      db.query(query,[id],(err,result) => { 
-        if(err){
-          return reject(err);
-        }  
-        resolve(result); 
-      })
-    
-    })
+    static removeProduct(user_id,product_id){ 
+      return new Promise((resolve, reject) => {
+        const query = `
+          DELETE PRODUCT, OWNERSHIP
+          FROM PRODUCT
+          INNER JOIN OWNERSHIP ON PRODUCT.PRODUCT_ID = OWNERSHIP.PRODUCT_ID
+          WHERE PRODUCT.PRODUCT_ID = ? AND OWNERSHIP.USER_ID = ?;
+        `;
+      
+        db.query(query, [product_id, user_id], (err, result) => {
+          if (err) {
+            console.error(err);
+            return reject(err);
+          }
+      
+          if (result.affectedRows > 0) {
+            resolve("Success");
+          } else {
+            reject("Failure");
+          }
+        });
+      });
+    } 
 
-    }
-    static discontinueProduct(user_id,id){
+    static discontinueProduct(user_id,product_id){
       return new Promise((resolve,reject)=>{
         const query = `UPDATE Product 
+        INNER JOIN Ownership ON PRODUCT.PRODUCT_ID = OWNERSHIP.PRODUCT_ID 
         SET product_discontinued = 1 
-        WHERE product_id = ? 
+        WHERE product.product_id = ? AND ownership.user_id = ? 
         ` 
-        db.query(query,id,(err,result) => {
+        db.query(query,[product_id,user_id],(err,result) => {
         if(err){
         return reject(err); 
         } 
@@ -262,36 +276,5 @@ class StockManagement{
     }
       
 }  
-
-//addProduct 
-// StockManagement.addProduct(1,"Refrigerator", 
-//   {
-//     product_id: "T011",
-//     name:"FRIDGETR123", 
-//     price:1099.99,
-//     discontinued: false
-//   },
-//   {
-//     brand:"LG",
-//     energy_rating:"A+", 
-//     door_type:"French door design", 
-//     capacity: 3.11
-//   }
-// )
-// .then((result)=>
-// {
-//    console.log("Added a refrigerator")
-// })
-// .catch((err)=>{
-//   console.log(err);
-// }) 
-
-//general product info 
-//{product_id, price, quantity, discontinued, ownership_date}
-//fridge 
-//{brand,energy_rating,door_type,capacity} 
-//tv 
-//{screen_size,resolution,smart_tv,brand}  
-
 
 export {StockManagement}
