@@ -1,8 +1,10 @@
 import express from "express" 
 import path from 'path'  
+import multer from 'multer'; 
 import {authenticateUser,registerUser, getUserIdByName} from "../Auth/authenticateUser.js"
 import {StockManagement} from "./StockManagement.js"  
 import pool from './connection.js'; 
+
 import cors from "cors"
 const app= express() 
 const PORT= 3000 
@@ -18,12 +20,24 @@ pool.getConnection(function(err,connection){
     process.exit(1); 
   }
 })
+const storage = multer.diskStorage(
+  {
+    destination: function(req,file,cb){
+      cb(null, './uploads/user_assets')
+    },
+    filename: function (req,file,cb){
+      const fileName = file.originalname; 
+      cb(null, fileName); 
+    }
+  }
+) 
+const upload = multer({storage : storage}) 
 //App configurations
 app.use(cors());
 app.use(express.static(path.join(path.resolve(),'public')))
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
-app.use(express.static('/'))
+app.use(express.static('./uploads'))
 
 //Endpoints
 app.get("/events/:user_id",(req,res)=>
@@ -86,7 +100,9 @@ app.post("/register",(req,res) => {
   })
 })   
 
-app.post("/login",(req,res) => {
+
+
+app.post("/api/login",(req,res) => {
   const {username,password } = req.body;  
   authenticateUser(username,password)
   .then((response)=>{
@@ -116,17 +132,13 @@ app.post("/login",(req,res) => {
   })
 }) 
 
-app.get("/workspace",(req,res)=>{
+app.get("/api/workspace",(req,res)=>{
   res.sendFile(path.join(path.resolve(),'public','productForm.html')); 
 }) 
-
-app.post("/addProduct",(req,res) => { 
+app.post("/api/addProduct",upload.single('product_image'),(req,res) => { 
    console.log(req.body) 
    console.log("add product called");   
-   
-   if(req.body.product_type=='TV'){
-     
-   }
+  
    StockManagement.addProduct(
     req.body.user_id,
     req.body.product_type,
@@ -137,8 +149,10 @@ app.post("/addProduct",(req,res) => {
         discontinued: false,
         quantity: req.body.quantity,
         ownership_date: req.body.ownership_date,
+        brand:req.body.brand, 
+        product_image: "/user_assets/"+req.file.filename 
     },
-       req.body.product_description
+       {description:req.body.product_description}
 )
     .then((result) => {
         if (result === 'ok') {
@@ -158,8 +172,9 @@ app.post("/addProduct",(req,res) => {
     });
 }) 
 
-app.delete("/deleteProduct/:product_id",(req,res)=>{
-    StockManagement.removeProduct(req.params.product_id)
+
+app.delete("/api/deleteProduct/:user_id/:product_id",(req,res)=>{
+    StockManagement.removeProduct(req.params.user_id,req.params.product_id)
     .then((result)=>{ 
       res.send({status:"success"})
     })
@@ -168,16 +183,28 @@ app.delete("/deleteProduct/:product_id",(req,res)=>{
       res.send({status:"DELETED"}); 
     })
 }) 
-app.patch("/updateProduct/:product_id/:product_type/:product_prop/:new_value",(req,res)=>{
-  StockManagement.updateProductDetails(req.params.product_id,req.params.product_type,req.params.product_prop,req.params.new_value)
+app.post("/api/updateProduct",upload.single('new_value'),(req,res)=>{  
+  var new_value = null;   
+  try{
+    new_value =  req.file.path.replace('uploads','.').replaceAll('\\','/'); 
+    console.log(new_value)
+  }
+  catch{
+    new_value = req.body.new_value; 
+  }
+  console.log(req.body.user_id,req.body.product_id,req.body.product_prop,new_value);
+  StockManagement.updateProductDetails(req.body.user_id,req.body.product_id,req.body.product_prop,new_value)
   .then((done)=>{
     res.send({status:"success"})
   }) 
   .catch((err)=>{
     res.send({status:err}) 
-  })
+  })  
+
+  
 })
-app.get("/getProduct",(req,res)=>{
+
+app.get("/api/getProductbyType",(req,res)=>{
   
     StockManagement.getAllProductsbyType(req.query.user_id,req.query.product_type)
     .then( 
@@ -193,9 +220,22 @@ app.get("/getProduct",(req,res)=>{
       }
     ) 
     
-}) 
+})  
 
-app.post("/discontinueProduct",(req,res)=>{
+app.get("/api/getAllProducts/:user_id",(req,res)=>{ 
+  console.log(req.params.user_id);
+  StockManagement.getProductsOwnedBy(req.params.user_id)
+  .then((results)=>{  
+    console.log(results); 
+    res.send(results); 
+  }) 
+  .catch((err)=>{ 
+    console.log(err);
+    res.statusCode(404).send(err); 
+  })
+})
+
+app.post("/api/discontinueProduct",(req,res)=>{
    StockManagement.discontinueProduct(req.body.user_id,req.body.product_id)
    .then((result)=>{res.send(result)}) 
    .catch((err)=>{res.send("ERROR")})
