@@ -17,7 +17,7 @@ class StockManagement{
       FROM 
           ownership o
       JOIN 
-          product p ON p.product_id = o.product_id
+          product p ON p.product_id = o.product_id 
       WHERE 
           o.user_id = ? AND p.product_type = ?
       ` 
@@ -27,6 +27,32 @@ class StockManagement{
 
         }
         resolve(result); 
+      })
+    })
+  } 
+  static getProductsOwnedBy(user_id){
+    return new Promise((resolve,reject)=>{
+      const query =
+      ` 
+      SELECT 
+          p.*, 
+          DATE_FORMAT(o.ownership_date, "%M %d %Y") AS ownership_date, 
+          o.quantity, 
+          o.quantity * p.product_price AS total_value
+      FROM 
+          ownership o
+      JOIN 
+          product p ON p.product_id = o.product_id
+      WHERE 
+          o.user_id = ?
+      
+      `
+      db.query(query,[user_id],(err,results)=>{
+        if(err){ 
+          console.log(err); 
+          return reject(err)
+        } 
+        resolve(results); 
       })
     })
   }
@@ -152,20 +178,32 @@ class StockManagement{
       )  
     }
     )
-    }
+    } 
+    
     static addProduct(user_id,product_type,product_info,product_details){ 
      return new Promise((resolve,reject) =>{
-      db.query('INSERT INTO Product (product_id,product_price,product_name,product_discontinued,product_type,product_description,product_brand) VALUES (?,?,?,?,?,?,?)',
-               [product_info.product_id,product_info.price,product_info.name,product_info.discontinued,product_type,JSON.stringify(product_details),product_info.product_brand],function(err,result){
-                    if(err ){
-                      console.log(err.stack); 
-                      reject(err); 
-                    } 
-                    else{  
-                      resolve("OK")
-                    }
-               } 
-              )   
+      db.query(
+        'INSERT INTO Product (product_id, product_price, product_name, product_discontinued, product_type, product_description, product_brand, image_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          product_info.product_id,
+          product_info.price,
+          product_info.name,
+          product_info.discontinued,
+          product_type,
+          JSON.stringify(product_details),
+          product_info.brand,
+          product_info.product_image
+        ],
+        function(err, result) {
+          if (err) {
+            console.error('SQL Error:', err.stack);
+            console.error('Executed Query:', this.sql);
+            reject(err);
+          } else {
+            resolve("OK");
+          }
+        }
+      );
           }
      )
      .then(()=>{
@@ -174,13 +212,14 @@ class StockManagement{
      })
     }
     static updateProductDetails(user_id,product_id,product_property,new_value){ 
-        
+      
       const prop_list = [
         "product_id",
         "product_name",
         "product_price",
         "product_type",
         "product_discontinued",
+        "image_path",
         "product_brand",
         "ownership_date",
         "quantity",
@@ -277,4 +316,8 @@ class StockManagement{
       
 }  
 
+StockManagement.getProductsOwnedBy(19)
+.then((results)=>{
+ console.log(results);
+})
 export {StockManagement}

@@ -5,11 +5,12 @@ async function authenticateUser(user_name,user_password){
   const result = await new Promise((res,rej)=>{ db.query(`SELECT user_password FROM User WHERE user_name = ? `,
      [user_name,user_password],
      (err,results)=>{
-       if(err){
-         rej("DB ERROR"); 
+       if(err){ 
+          
+          rej("DB ERROR: " + err); 
        } 
        else if(results.length == 0){  
-          res("wrong-username");
+          res("wrong-username"); 
        } 
        else if(bcrypt.compareSync(user_password,results[0].user_password)==true){
           res("success");
