@@ -1,0 +1,16 @@
+.userForm{
+    color:white; 
+    background-color:blue; 
+    width:50%; 
+    margin:auto; 
+    padding: 20px;  
+    border-radius:20px; 
+    text-align:center; 
+   
+}
+
+
+body{
+    background-image:url("/public/assets/mainBackground.jpg")
+}
+
