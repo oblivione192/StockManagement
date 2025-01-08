@@ -75,7 +75,7 @@ app.get("/goto-register",(req,res) => {
  
 }) 
 
-app.post("/register",(req,res) => {
+app.post("/api/register",(req,res) => {
   const {username,password,email}=req.body; 
   registerUser(username,password,email)
   .then((response) =>{
