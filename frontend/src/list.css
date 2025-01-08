@@ -1,0 +1,89 @@
+.category-list-items{ 
+    display:flex;   
+    justify-content:space-between;
+    align-items:center;
+} 
+.category-list-items:hover{
+    background-color:white; 
+    color:black;
+} 
+.category-checkbox{
+    margin-left:10px;
+}
+.list-group{
+    overflow-y:scroll;  
+    max-height:120px;  
+    scrollbar-width: thin; /* Options: auto, thin, none */
+    scrollbar-color: #888 #f1f1f1; /* Thumb color and track color */
+}
+
+.small-input{
+    border-radius:5px; 
+    width:8px;
+} 
+
+.grid-list-group {
+    display: grid; 
+    grid-template-columns: repeat(4, 1fr); /* 4 items per row */
+    gap: 6px;  /* Space between items */
+    padding: 20px;
+  }
+  
+  .grid-item {
+    background-color: #fff;
+    border: 1px solid #ccc; 
+    width: 85%;
+    height: 90%; 
+    max-width:fit-content; 
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column; /* Stack content vertically */
+  }
+  
+  .product-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  
+  .product-image-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .product-image {
+    max-width: 100%;
+    size:60%;
+    height: 40%;
+    width: auto; 
+    border-radius: 5px;
+  }
+  
+  .product-description {
+    display: flex;
+    flex-direction: column;  
+    font-size:12px;
+    height: 50%;   
+    width: auto; 
+    gap: 2px;
+  }
+  
+  .product-field {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .field-name {
+    font-weight: bold;
+  }
+  
+  .field-value {
+    color: #555;
+  }
+  
+  
