@@ -6,7 +6,8 @@
     "scripts": {
       "test:backend": "cd backend && npm test",
       "test:frontend": "cd frontend && npm start",
-      "build:frontend": "cd frontend && npm build"
+      "build:frontend": "cd frontend && npm build",
+      "install": "cd frontend && npm install && cd .. && cd backend && npm install"
     },
     "type": "module",
     "author": "Eugene"
