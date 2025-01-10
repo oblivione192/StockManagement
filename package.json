@@ -1,28 +1,14 @@
 {
-  "name": "stockmanagement",
-  "version": "1.0.0",
-  "description": "App to manage stocks",
-  "main": "index.js", 
- 
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon index.js",
-    "start:dev": "SET NODE_ENV=development node dataQuery.js",
-    "start:test": "SET NODE_ENV=test node dataQuery.js",
-    "start:prod": "SET NODE_ENV=production node dataQuery.js"
-  },
-  "type": "module",
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcrypt": "^5.1.1",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "mongoose": "^8.8.0",
-    "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.11.4",
-    "react-native": "^0.76.3",
-    "ws": "^8.18.0"
+    "name": "stockmanagement",
+    "version": "1.0.0",
+    "description": "App to manage stocks",
+    "main": "index.js", 
+    "scripts": {
+      "test:backend": "cd backend && npm test",
+      "test:frontend": "cd frontend && npm start",
+      "build:frontend": "cd frontend && npm build"
+    },
+    "type": "module",
+    "author": "Eugene"
   }
-}
+  
