@@ -2,14 +2,16 @@
     "name": "stockmanagement",
     "version": "1.0.0",
     "description": "App to manage stocks",
-    "main": "index.js", 
+    "main": "index.js",
     "scripts": {
-      "test:backend": "cd backend && npm test",
-      "test:frontend": "cd frontend && npm start",
-      "build:frontend": "cd frontend && npm build",
-      "install": "cd frontend && npm install && cd .. && cd backend && npm install"
+        "test:backend": "cd backend && npm test",
+        "test:frontend": "cd frontend && npm start",
+        "build:frontend": "cd frontend && npm build",
+        "install": "cd frontend && npm install && cd .. && cd backend && npm install"
     },
     "type": "module",
-    "author": "Eugene"
-  }
-  
+    "author": "Eugene",
+    "devDependencies": {
+        "webpack-cli": "^6.0.1"
+    }
+}

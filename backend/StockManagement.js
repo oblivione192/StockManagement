@@ -1,5 +1,5 @@
 import db from './db/connection.js' 
-
+import fs from 'fs'
 
 class StockManagement{ 
   

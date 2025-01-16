@@ -1,5 +1,5 @@
 import db from '../db/connection.js'
-import bcrypt from 'bcrypt' 
+import bcrypt from 'bcryptjs'
 
 async function authenticateUser(user_name,user_password){ 
   const result = await new Promise((res,rej)=>{ db.query(`SELECT user_password FROM User WHERE user_name = ? `,

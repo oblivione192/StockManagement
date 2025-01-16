@@ -4,11 +4,10 @@ import multer from 'multer';
 import {authenticateUser,registerUser, getUserIdByName} from "./Auth/authenticateUser.js"
 import {StockManagement} from "./StockManagement.js"  
 import pool from './db/connection.js'; 
-
+import fs from 'fs'; 
 import cors from "cors"
 const app= express() 
 const PORT= 3000 
-
 //Manage user connections 
 var userConnections= {} 
 
@@ -35,12 +34,14 @@ const storage = multer.diskStorage(
 const upload = multer({storage : storage}) 
 //App configurations
 app.use(cors());
-app.use(express.static(path.join(path.resolve(),'public')))
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 app.use(express.static('./uploads'))
-
-//Endpoints
+app.use(express.static('./build'))
+//Endpoints 
+app.get("/",(req,res)=>{
+  res.sendFile("/build/index.html")
+})
 app.get("/events/:user_id",(req,res)=>
   { 
     const user_id = req.params.user_id;  
@@ -186,8 +187,26 @@ app.delete("/api/deleteProduct/:user_id/:product_id",(req,res)=>{
 }) 
 app.post("/api/updateProduct",upload.single('new_value'),(req,res)=>{  
   var new_value = null;   
+  const getOldImagePath= async function(){
+    return new Promise((rej,res)=>{
+       pool.query('SELECT IMAGE_PATH FROM PRODUCT WHERE PRODUCT_ID = ?',[req.body.product_id],
+        (err,result)=>{
+          if(err){
+            return rej(err);
+          }
+          else{
+            resolve(result);
+          }
+        }
+       )
+    })
+  }
   try{
-    new_value =  req.file.path.replace('uploads','.').replaceAll('\\','/'); 
+    new_value =  req.file.path.replace('uploads','.').replaceAll('\\','/');  
+    getOldImagePath() 
+    .then((path)=>{
+      fs.unlinkSync("uploads/"+path); 
+    })
     console.log(new_value)
   }
   catch{
