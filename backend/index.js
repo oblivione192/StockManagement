@@ -187,26 +187,9 @@ app.delete("/api/deleteProduct/:user_id/:product_id",(req,res)=>{
 }) 
 app.post("/api/updateProduct",upload.single('new_value'),(req,res)=>{  
   var new_value = null;   
-  const getOldImagePath= async function(){
-    return new Promise((rej,res)=>{
-       pool.query('SELECT IMAGE_PATH FROM PRODUCT WHERE PRODUCT_ID = ?',[req.body.product_id],
-        (err,result)=>{
-          if(err){
-            return rej(err);
-          }
-          else{
-            resolve(result);
-          }
-        }
-       )
-    })
-  }
+ 
   try{
     new_value =  req.file.path.replace('uploads','.').replaceAll('\\','/');  
-    getOldImagePath() 
-    .then((path)=>{
-      fs.unlinkSync("uploads/"+path); 
-    })
     console.log(new_value)
   }
   catch{
